@@ -4,34 +4,49 @@ import * as fs from 'node:fs';
 import { DownloadFormatted, MiniSerie, Serie } from "./downloadFormatted";
 
 class MovieFormatter {
-    retrieveMovies(socket: Socket) {
-        // const dir = '/mnt/nas/plex/downloaded';
-        const dir = '/Users/jeffreymaas/Downloads/';
-        const formatted: DownloadFormatted[] = [];
 
-        fs.readdir(dir, (_, downloads) => {
+    serieRegex = RegExp(/[a-zA-Z][0-9][0-9][a-zA-Z][0-9][0-9]/g);
+    specialCharacterRegex = RegExp(/[^a-zA-Z0-9]/g);
+    yearRegex = RegExp(/[0-9]{4}/g);
+    duplicateSpacesRegex = RegExp(/\s\s+/g);
+
+    // dir = "/Users/jeffreymaas/Downloads/";
+    dir = "/Users/jeffreymaas/Downloads/";
+
+    retrieveMovies(socket: Socket) {
+        const formatted: DownloadFormatted[] = [];
+        fs.readdir(this.dir, (_, downloads) => {
             downloads.forEach(download => {
                 if(download.includes(".mkv") != false || download.includes(".mp4") != false) {
-                    const titleWithoutSpecialCharacters = download.replace(/[^a-zA-Z0-9]/g, " ")
-                    const regexYear = titleWithoutSpecialCharacters.match(RegExp("[0-9]{4}"));
+                    const titleWithoutSpecialCharacters = download.replace(this.specialCharacterRegex, " ")
+                    const regexYear = titleWithoutSpecialCharacters.match(this.yearRegex);
                     
-                    let year = -1;
                     let season = "";
                     let episode = "";
                     let serie: Serie | null = null;
                     let miniSerie: MiniSerie | null = null;
+                    let year: Number | null = null;
 
                     if(regexYear.length > 0) {
-                        year = (regexYear.length > 0 && (regexYear[0].charAt(0) == "2" || regexYear[0].charAt(0) == "1" && regexYear[0].charAt(0) == "1" && regexYear[0].charAt(1) == "9" && Number(regexYear[0].charAt(2)) >= 5)) ? Number(regexYear[0]) : -1 ;
+                        year = (
+                            regexYear.length > 0 && 
+                            (
+                                regexYear[0].charAt(0) == "2" || 
+                                regexYear[0].charAt(0) == "1" && 
+                                regexYear[0].charAt(0) == "1" && 
+                                regexYear[0].charAt(1) == "9" && 
+                                Number(regexYear[0].charAt(2)) >= 5
+                            )
+                        ) ? Number(regexYear[0]) : -1 ;
                     }
 
-                    const isMovie = titleWithoutSpecialCharacters.match(RegExp("[a-zA-Z][0-9][0-9][a-zA-Z][0-9][0-9]")).length == 0;
-                    const isSerie = titleWithoutSpecialCharacters.match(RegExp("[a-zA-Z][0-9][0-9][a-zA-Z][0-9][0-9]")).length > 0;
+                    const isMovie = titleWithoutSpecialCharacters.match(this.serieRegex).length == 0;
+                    const isSerie = titleWithoutSpecialCharacters.match(this.serieRegex).length > 0;
                     let isMiniSerie = false;
 
                     if(isSerie) {
-                        season = titleWithoutSpecialCharacters.match(RegExp("[a-zA-Z][0-9][0-9][a-zA-Z][0-9][0-9]"))[0].split("e")[0].toLowerCase();
-                        episode = "e" + titleWithoutSpecialCharacters.match(RegExp("[a-zA-Z][0-9][0-9][a-zA-Z][0-9][0-9]"))[0].split("e")[1].toLowerCase();
+                        season = titleWithoutSpecialCharacters.match(this.serieRegex)[0].split("e")[0].toLowerCase();
+                        episode = "e" + titleWithoutSpecialCharacters.match(this.serieRegex)[0].split("e")[1].toLowerCase();
 
                     }
 
@@ -40,7 +55,7 @@ class MovieFormatter {
                             .replace(season, "")
                             .replace(episode, "")
                             .split(regexYear[0])[0]
-                            .replace(/\s\s+/g, ' ');
+                            .replace(this.duplicateSpacesRegex, ' ');
 
                     formatted.push(
                         {
