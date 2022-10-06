@@ -5,10 +5,10 @@ type DownloadFormatted = {
     isMiniSerie: boolean,
 
     serie: Serie | null,
-    miniSerie: MiniSerie | null
 
     year: Number
     title: String
+    newTitle: String
 };
 
 type Serie = {
