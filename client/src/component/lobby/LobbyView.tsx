@@ -60,7 +60,6 @@ export const LobbyView: React.FC = () => {
     }
 
     const moveFiles = () => {
-        console.log(changedFileState);
         socket?.emit("move-files", changedFileState);
     }
 

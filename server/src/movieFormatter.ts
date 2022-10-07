@@ -33,9 +33,7 @@ class MovieFormatter {
         }).finally(() => {
             directories.forEach((path, index) => {
                 let yeet: DownloadFormatted[] = [];
-                console.log(this.dir + path)
                 fs.promises.readdir(this.dir + path).then(files => {
-                    console.log(files);
                     files.forEach(file => {
                         if(file.includes(".mkv") != false || file.includes(".mp4") != false) {
                             const size = fs.statSync(this.dir + path + "/" + file).size;
@@ -123,8 +121,6 @@ class MovieFormatter {
                                 });
                         }
                     });
-
-                    console.log(yeet);
                     
                     const maxMatch = (yeet[0].isSerie || yeet[0].isMiniSerie) ? Math.max(...f.map(x => x.map(y => y.existsIn)).flat(2)) : -1;
                     let ff = yeet.map(x => {
@@ -165,8 +161,7 @@ class MovieFormatter {
 
                     if(directories.length == allFiles.length) {
                         const resp = buildResponse(allFiles, false, "");
-                        Logger.DEBUG("retrieved movies");
-                        console.log(resp);
+                        Logger.DEBUG(`retrieved ${allFiles.length} files`);
                         emitToSelf(socket, "files-retrieved", resp);
                     }
                 });
