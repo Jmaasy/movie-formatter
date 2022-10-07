@@ -31,6 +31,8 @@ class MovieFormatter {
             });         
         }, err => {
         }).finally(() => {
+            Logger.INFO(`found ${directories.length} directories`);
+
             directories.forEach((path, index) => {
                 let yeet: DownloadFormatted[] = [];
                 fs.promises.readdir(this.dir + path).then(files => {
@@ -108,6 +110,8 @@ class MovieFormatter {
                         }
                     });        
                 }).finally(() => {
+                    Logger.INFO(`found ${yeet.length} files`);
+
                     if(yeet.length > 0) {
                         const f = yeet.map(x => {
                             if(x.isSerie) {
@@ -161,6 +165,8 @@ class MovieFormatter {
                         allFiles.push(ff);
 
                     }
+
+                    Logger.INFO(`status: ${directories.length}/${allFiles.length}`);
 
                     if(directories.length == allFiles.length) {
                         const resp = buildResponse(allFiles, false, "");
