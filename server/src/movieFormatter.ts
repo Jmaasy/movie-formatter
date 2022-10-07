@@ -12,10 +12,12 @@ class MovieFormatter {
     fourNumbersRegex = RegExp(/[0-9]{4}/g);
     duplicateSpacesRegex = RegExp(/\s\s+/g);
 
-    dir = "/mnt/nas/Plex/Downloaded/";
-    dirMovie = "/mnt/nas/Plex/Movies/";
-    dirMiniSerie = "/mnt/nas/Plex/Mini-Series/";
-    dirSerie = "/mnt/nas/Plex/Series/";
+    preDir = "/Users/jeffreymaas/nas"
+
+    dir = this.preDir + "/Plex/Downloaded/";
+    dirMovie = this.preDir + "/Plex/Movies/";
+    dirMiniSerie = this.preDir + "/Plex/Mini-Series/";
+    dirSerie = this.preDir + "/Plex/Series/";
     
     retrieveMovies(socket: Socket) {
         let directories: string[] = [];
@@ -211,6 +213,7 @@ class MovieFormatter {
                                 fs.readdir(this.dir + y.originalDir, function(_, files) {
                                     if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
                                         fs.rmSync(this.dir + y.originalDir, { recursive: true, force: true });
+                                        this.retrieveMovies(socket);
                                     }
                                 });
                             }
@@ -225,6 +228,7 @@ class MovieFormatter {
                                 fs.readdir(this.dir + y.originalDir, function(_, files) {
                                     if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
                                         fs.rmSync(this.dir + y.originalDir, { recursive: true, force: true });
+                                        this.retrieveMovies(socket);
                                     }
                                 });
                             }
@@ -233,10 +237,6 @@ class MovieFormatter {
                 }
             })
         })
-    }
-
-    renameMovie() {
-
     }
 }
 
