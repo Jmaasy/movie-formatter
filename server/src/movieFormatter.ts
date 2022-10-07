@@ -142,22 +142,24 @@ class MovieFormatter {
                         return x;
                     });
 
-                    ff = ff.map(x => {
-                        if(x.newTitle != null) {
-                            x.title = x.newTitle;
-                            x.newTitle = null;
-                        }
-                        return x;
-                    })
-
-                    if(ff[0].isSerie && ff.length < 6) {
-                        ff.forEach(fff => {
-                            fff.isMiniSerie = true;
-                            fff.isSerie = false;
+                    if(ff.length > 0) {
+                        ff = ff.map(x => {
+                            if(x.newTitle != null) {
+                                x.title = x.newTitle;
+                                x.newTitle = null;
+                            }
+                            return x;
                         })
+    
+                        if(ff[0].isSerie && ff.length < 6) {
+                            ff.forEach(fff => {
+                                fff.isMiniSerie = true;
+                                fff.isSerie = false;
+                            })
+                        }
+    
+                        allFiles.push(ff);
                     }
-
-                    allFiles.push(ff);
 
                     if(directories.length == allFiles.length) {
                         const resp = buildResponse(allFiles, false, "");
