@@ -1,12 +1,8 @@
 import { Socket } from "socket.io";
 import { buildResponse, emitToSelf } from "./response";
-import * as fs from 'node:fs';
+import * as fs from 'fs';
 import { DownloadFormatted, Serie } from "./downloadFormatted";
 import Logger from "./logger";
-import { RequestInfo, RequestInit } from 'node-fetch';
-
-const fetch = (url: RequestInfo, init?: RequestInit) => import('node-fetch').then(({ default: fetch }) => fetch(url, init));
-
 
 class MovieFormatter {
 
