@@ -108,41 +108,41 @@ class MovieFormatter {
                         }
                     });        
                 }).finally(() => {
-                    const f = yeet.map(x => {
-                        if(x.isSerie) {
-                            return x.title
-                                .split(" ")
-                                .map(part => {
-                                    const exists = yeet.filter(x => x.title.includes(part));
-                                    return {
-                                        existsIn: exists.length - 1,
-                                        needle: part
-                                    }
-                                });
-                        }
-                    });
-                    
-                    const maxMatch = (yeet[0].isSerie || yeet[0].isMiniSerie) ? Math.max(...f.map(x => x.map(y => y.existsIn)).flat(2)) : -1;
-                    let ff = yeet.map(x => {
-                        if(x.isSerie) {
-                            const yayeet = x.title
-                                .split(" ")
-                                .map(part => {
-                                    const exists = yeet.filter(x => x.title.includes(part));
-                                    return {
-                                        existsIn: exists.length - 1,
-                                        needle: part
-                                    }
-                                });
+                    if(yeet.length > 0) {
+                        const f = yeet.map(x => {
+                            if(x.isSerie) {
+                                return x.title
+                                    .split(" ")
+                                    .map(part => {
+                                        const exists = yeet.filter(x => x.title.includes(part));
+                                        return {
+                                            existsIn: exists.length - 1,
+                                            needle: part
+                                        }
+                                    });
+                            }
+                        });
+                        
+                        const maxMatch = (yeet[0].isSerie || yeet[0].isMiniSerie) ? Math.max(...f.map(x => x.map(y => y.existsIn)).flat(2)) : -1;
+                        let ff = yeet.map(x => {
+                            if(x.isSerie) {
+                                const yayeet = x.title
+                                    .split(" ")
+                                    .map(part => {
+                                        const exists = yeet.filter(x => x.title.includes(part));
+                                        return {
+                                            existsIn: exists.length - 1,
+                                            needle: part
+                                        }
+                                    });
 
-                            x.serie.episodeTitle = yayeet.filter(x => x.existsIn != maxMatch).map(x => x.needle).join(" ");   
-                            x.newTitle = yayeet.filter(x => x.existsIn == maxMatch).map(x => x.needle).join(" ");                    
-                        }
+                                x.serie.episodeTitle = yayeet.filter(x => x.existsIn != maxMatch).map(x => x.needle).join(" ");   
+                                x.newTitle = yayeet.filter(x => x.existsIn == maxMatch).map(x => x.needle).join(" ");                    
+                            }
 
-                        return x;
-                    });
+                            return x;
+                        });
 
-                    if(ff.length > 0) {
                         ff = ff.map(x => {
                             if(x.newTitle != null) {
                                 x.title = x.newTitle;
@@ -150,15 +150,16 @@ class MovieFormatter {
                             }
                             return x;
                         })
-    
+
                         if(ff[0].isSerie && ff.length < 6) {
                             ff.forEach(fff => {
                                 fff.isMiniSerie = true;
                                 fff.isSerie = false;
                             })
                         }
-    
+
                         allFiles.push(ff);
+
                     }
 
                     if(directories.length == allFiles.length) {
