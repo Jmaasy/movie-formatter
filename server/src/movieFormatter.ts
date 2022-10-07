@@ -12,10 +12,10 @@ class MovieFormatter {
     fourNumbersRegex = RegExp(/[0-9]{4}/g);
     duplicateSpacesRegex = RegExp(/\s\s+/g);
 
-    dir = "/Users/jeffreymaas/nas/Plex/Downloaded/";
-    dirMovie = "/Users/jeffreymaas/nas/Plex/Movies/";
-    dirMiniSerie = "/Users/jeffreymaas/nas/Plex/Mini-Series/";
-    dirSerie = "/Users/jeffreymaas/nas/Plex/Series/";
+    dir = "/mnt/nas/Plex/Downloaded/";
+    dirMovie = "/mnt/nas/Plex/Movies/";
+    dirMiniSerie = "/mnt/nas/Plex/Mini-Series/";
+    dirSerie = "/mnt/nas/Plex/Series/";
     
     retrieveMovies(socket: Socket) {
         let directories: string[] = [];
