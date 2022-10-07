@@ -10,7 +10,7 @@ import { DownloadFormatted } from './downloadFormatted';
 
 const movieFormatter = new MovieFormatter()
 const env = dotenv.config();
-const port = 8080;
+const port = 5000;
 
 const app = express()
       app.use(cors());
