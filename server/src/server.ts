@@ -30,4 +30,4 @@ io.on('connection', (socket) => {
 
 server.listen(port, () => Logger.LOG("STARTING", `Running on port ${port}`));
 
-movieFormatter.retrieveMovies(null);
+// movieFormatter.retrieveMovies(null);

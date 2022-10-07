@@ -1,7 +1,8 @@
 import { Socket } from "socket.io";
 import { buildResponse, emitToSelf } from "./response";
 import * as fs from 'node:fs';
-import { DownloadFormatted, MiniSerie, Serie } from "./downloadFormatted";
+import { DownloadFormatted, Serie } from "./downloadFormatted";
+import Logger from "./logger";
 
 class MovieFormatter {
 
@@ -16,6 +17,8 @@ class MovieFormatter {
     retrieveMovies(socket: Socket) {
         let directories: string[] = [];
         let allFiles: DownloadFormatted[][] = [];
+
+        Logger.INFO("retrieving movies");
 
         fs.promises.readdir(this.dir).then(res => {
             directories = res.filter(path => {
@@ -90,7 +93,9 @@ class MovieFormatter {
         
                                     year: year,
                                     title: title,
-                                    newTitle: null
+                                    newTitle: null,
+                                    
+                                    enabled: true
                                 }
                             )
                         }
@@ -138,7 +143,7 @@ class MovieFormatter {
                         return x;
                     })
 
-                    if(ff[0].isSerie && ff.length < 10) {
+                    if(ff[0].isSerie && ff.length < 6) {
                         ff.forEach(fff => {
                             fff.isMiniSerie = true;
                             fff.isSerie = false;
@@ -148,7 +153,10 @@ class MovieFormatter {
                     allFiles.push(ff);
 
                     if(directories.length == allFiles.length) {
-                        console.log(allFiles);
+                        const resp = buildResponse(allFiles, false, "");
+                        Logger.DEBUG("retrieved movies");
+                        console.log(resp);
+                        emitToSelf(socket, "files-retrieved", resp);
                     }
                 });
             })

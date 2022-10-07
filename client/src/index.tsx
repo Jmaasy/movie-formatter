@@ -1,10 +1,10 @@
 import { render } from "react-dom";
 import { App } from './App';
-import { LobbyProvider, startupLobbyState } from "./provider/LobbyProvider";
+import { SocketProvider, startupSocketState } from "./provider/SocketProvider";
 
 render(
-    <LobbyProvider value={startupLobbyState()}>
+    <SocketProvider value={startupSocketState()}>
         <App />
-    </LobbyProvider>,
+    </SocketProvider>,
     document.getElementById("root")
 );

@@ -1,18 +1,19 @@
-import { User } from "../user/UserType"
+export type FileMapper = {
+    isMovie: boolean,
+    isSerie: boolean,
+    isMiniSerie: boolean,
 
-export type Lobby = {
-    id: string | null,
-    users: User[],
-    state: LobbyState,
-    revealIn: number
-}
+    serie: Serie | null,
 
-export enum LobbyState {
-    STARTED,
-    VOTED,
-    COUNTDOWN,
-    REVEALED,
-    RESET,
-    ERROR,
-    STARTUP
-}
+    year: Number
+    title: string
+    newTitle: string,
+
+    enabled: boolean
+};
+
+export type Serie = {
+    episodeTitle: string,
+    season: string,
+    episode: string
+};

@@ -1,4 +1,3 @@
-
 type DownloadFormatted = {
     isMovie: boolean,
     isSerie: boolean,
@@ -6,9 +5,11 @@ type DownloadFormatted = {
 
     serie: Serie | null,
 
-    year: Number
-    title: String
-    newTitle: String
+    year: Number,
+    title: String,
+    newTitle: String,
+
+    enabled: boolean
 };
 
 type Serie = {
@@ -17,14 +18,4 @@ type Serie = {
     episode: String
 };
 
-type MiniSerie = {
-    episodeTitle: String,
-    season: String,
-    episode: String
-};
-
-type NeedleFinder = {
-
-}
-
-export { DownloadFormatted, Serie, MiniSerie, NeedleFinder };
+export { DownloadFormatted, Serie };
