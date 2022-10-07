@@ -29,7 +29,7 @@ class MovieFormatter {
             directories = res.filter(path => {
                 const dir = fs.lstatSync(this.dir + path).isDirectory();
                 const dirSpecialCharacter = this.specialCharacterRegex.test(path);
-                return dir == dirSpecialCharacter;
+                return dir && dirSpecialCharacter;
             });         
         }, err => {
         }).finally(() => {
