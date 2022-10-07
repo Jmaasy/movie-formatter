@@ -9,6 +9,10 @@ export type FileMapper = {
     title: string
     newTitle: string,
 
+    originalDir: string,
+    originalFileName: string,
+    originalSize: Number,
+
     enabled: boolean
 };
 

@@ -6,16 +6,20 @@ type DownloadFormatted = {
     serie: Serie | null,
 
     year: Number,
-    title: String,
-    newTitle: String,
+    title: string,
+    newTitle: string,
+
+    originalDir: string,
+    originalFileName: string,
+    originalSize: Number,
 
     enabled: boolean
 };
 
 type Serie = {
-    episodeTitle: String,
-    season: String,
-    episode: String
+    episodeTitle: string,
+    season: string,
+    episode: string
 };
 
 export { DownloadFormatted, Serie };

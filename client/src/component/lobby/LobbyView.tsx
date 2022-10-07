@@ -61,6 +61,7 @@ export const LobbyView: React.FC = () => {
 
     const moveFiles = () => {
         console.log(changedFileState);
+        socket?.emit("move-files", changedFileState);
     }
 
     let enabledCount = 0;
@@ -69,6 +70,7 @@ export const LobbyView: React.FC = () => {
         <div className="f">
             {
                 fileState?.map((x, index2) => {
+                
                     const enabled = (changedFileState != null && changedFileState[index2][0].enabled) ? "enabled" : "disabled";
 
                     const f = (

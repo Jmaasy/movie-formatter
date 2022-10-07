@@ -6,6 +6,7 @@ import * as dotenv from 'dotenv';
 import Logger from './logger';
 import { Server } from "socket.io";
 import MovieFormatter from './movieFormatter';
+import { DownloadFormatted } from './downloadFormatted';
 
 const movieFormatter = new MovieFormatter()
 const env = dotenv.config();
@@ -21,11 +22,13 @@ const app = express()
       });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' }, allowEIO3: true, pingInterval: 50, transports: ["websocket"]});
+const io = new Server(server, { cors: { origin: '*' }, allowEIO3: true, pingInterval: 100, transports: ["websocket"]});
 
 io.on("connect_error", (err) => Logger.ERROR(err));
 io.on('connection', (socket) => {
   movieFormatter.retrieveMovies(socket);
+
+  socket.on("move-files", (files: DownloadFormatted[][]) => movieFormatter.moveFiles(socket, files));
 });
 
 server.listen(port, () => Logger.LOG("STARTING", `Running on port ${port}`));
