@@ -215,11 +215,7 @@ class MovieFormatter {
                     let rootDir = this.dirMovie;
                     if(y.isMiniSerie) rootDir = this.dirMiniSerie;
                     if(y.isSerie) rootDir = this.dirSerie;
-
-                    if (!fs.existsSync(rootDir + "/" + y.title)){
-                        fs.mkdirSync(rootDir + "/" + y.title);
-                    }
-
+                    
                     const extension = y.originalFileName.split(".");
                     const dirrrr = this.dir;
 
@@ -237,7 +233,10 @@ class MovieFormatter {
                                 if (err) throw err;
                                 fs.readdir(this.dir + y.originalDir, function(_, files) {
                                     if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
-                                        fs.rmSync(dirrrr + y.originalDir, { recursive: true, force: true });
+                                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+                                            const resp = buildResponse(null, false, "");
+                                            emitToSelf(socket, "files-moved", resp);
+                                        });
                                         this.retrieveMovies(socket);
                                     }
                                 });
@@ -245,8 +244,8 @@ class MovieFormatter {
                         );
                     } else {
                         const dirFolder = y.title.split("(")[0].trim();
-                        if (!fs.existsSync(rootDir + "/" + dirFolder)){
-                            fs.mkdirSync(rootDir + "/" + dirFolder);
+                        if (!fs.existsSync(rootDir + dirFolder)){
+                            fs.mkdirSync(rootDir + dirFolder);
                         }
 
                         fs.rename(
@@ -259,8 +258,7 @@ class MovieFormatter {
                                     Logger.INFO(!files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")))
                                     
                                     if (!files.length || !files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")) || files.length == 0) {
-                                        fs.rm(dirrrr + y.originalDir, (err) => {
-                                            Logger.INFO(err);
+                                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
                                             const resp = buildResponse(null, false, "");
                                             emitToSelf(socket, "files-moved", resp);
                                         });
