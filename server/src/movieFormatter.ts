@@ -12,7 +12,7 @@ class MovieFormatter {
     fourNumbersRegex = RegExp(/[0-9]{4}/g);
     duplicateSpacesRegex = RegExp(/\s\s+/g);
 
-    preDir = "/Users/jeffreymaas/nas"
+    preDir = "/mnt/nas"
 
     dir = this.preDir + "/Plex/Downloaded/";
     dirMovie = this.preDir + "/Plex/Movies/";
@@ -221,6 +221,7 @@ class MovieFormatter {
                     }
 
                     const extension = y.originalFileName.split(".");
+                    const dirrrr = this.dir;
 
                     if(y.isMiniSerie || y.isSerie) {
                         if (!fs.existsSync(rootDir + "/" + y.title + "/" + y.serie.season.toUpperCase())){
@@ -236,7 +237,7 @@ class MovieFormatter {
                                 if (err) throw err;
                                 fs.readdir(this.dir + y.originalDir, function(_, files) {
                                     if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
-                                        fs.rmSync(this.dir + y.originalDir, { recursive: true, force: true });
+                                        fs.rmSync(dirrrr + y.originalDir, { recursive: true, force: true });
                                         this.retrieveMovies(socket);
                                     }
                                 });
@@ -244,7 +245,6 @@ class MovieFormatter {
                         );
                     } else {
                         const dirFolder = y.title.split("(")[0].trim();
-                        const dirrrr = this.dir;
                         if (!fs.existsSync(rootDir + "/" + dirFolder)){
                             fs.mkdirSync(rootDir + "/" + dirFolder);
                         }
@@ -256,9 +256,11 @@ class MovieFormatter {
                                 if (err) throw err;
                                 fs.readdir(dirrrr + y.originalDir, function(_, files) {
                                     if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
-                                        fs.rmSync(dirrrr + y.originalDir, { recursive: true, force: true });
-                                        const resp = buildResponse(null, false, "");
-                                        emitToSelf(socket, "files-moved", resp);
+                                        fs.rm(dirrrr + y.originalDir, (err) => {
+                                            console.log(err);
+                                            const resp = buildResponse(null, false, "");
+                                            emitToSelf(socket, "files-moved", resp);
+                                        });
                                     }
                                 });
                             }
