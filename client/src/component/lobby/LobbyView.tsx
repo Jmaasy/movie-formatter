@@ -6,6 +6,7 @@ import './LobbyView.css';
 
 export const LobbyView: React.FC = () => {   
     const [ fileState, setFileState ] = useState<FileMapper[][]>();
+    const [ verifyHidden, setVerifyHidden ] = useState<boolean>(true);
     const [ changedFileState, setChangedFileState ] = useState<FileMapper[][]>();
     const { socket } = useContext(SocketContext)!!;
     setupEventHandlers(socket, setFileState, setChangedFileState);
@@ -59,8 +60,37 @@ export const LobbyView: React.FC = () => {
         }
     }
 
+    const updateType = (inner: number, newValue: string) => {
+        if(changedFileState != undefined) {
+            const changedFileStateUpdated = changedFileState.map((v, k) => {
+                if(k == inner) {
+                    return v.map((x, k2) => {
+                        x.isMiniSerie = false;
+                        x.isSerie = false;
+                        x.isMovie = false;
+
+                        if(newValue == "0") x.isMovie = true;
+                        if(newValue == "1") x.isSerie = true;
+                        if(newValue == "2") x.isMiniSerie = true;
+                        return x;
+                    })
+                } else return v;
+            })
+
+            setChangedFileState(changedFileStateUpdated);
+        }
+    }
+
     const moveFiles = () => {
         socket?.emit("move-files", changedFileState);
+    }
+
+    const verifyMoveFiles = () => {
+        setVerifyHidden(false);
+    }
+
+    const cancelMoveFiles = () => {
+        setVerifyHidden(true);
     }
 
     let enabledCount = 0;
@@ -71,12 +101,18 @@ export const LobbyView: React.FC = () => {
                 fileState?.map((x, index2) => {
                 
                     const enabled = (changedFileState != null && changedFileState[index2][0].enabled) ? "enabled" : "disabled";
+                    
+                    let yayeet = "0"
+                    if(x[0].isSerie) yayeet = "1"
+                    if(x[0].isMiniSerie) yayeet = "2"
 
                     const f = (
                         <span className={'entry-head field-' + enabled}>
-                            {(x[0].isMovie) ? "Movie": ""}
-                            {(x[0].isSerie) ? "Serie": ""}
-                            {(x[0].isMiniSerie) ? "Mini Serie": ""}
+                            <select onChange={e => updateType(index2, e.target.value)} value={yayeet}>
+                                {(x[0].isMovie) ? (<option value="0" selected>Movie</option>): (<option value="0">Movie</option>)}
+                                {(x[0].isSerie) ? (<option value="1" selected>Serie</option>): (<option value="1">Serie</option>)}
+                                {(x[0].isMiniSerie) ? (<option value="2" selected>Mini Serie</option>): (<option value="2">Mini Serie</option>)}
+                            </select>
                         </span>
                     );
 
@@ -89,7 +125,7 @@ export const LobbyView: React.FC = () => {
                     ) : (
                         <span className={"entry-wrapper entry-wrapper-head field-" + enabled}>
                             <span>Title</span>
-                            <span>Subtitle</span>
+                            <span>Episode Name</span>
                             <span>Season</span>
                             <span>Episode</span>
                         </span>
@@ -108,8 +144,8 @@ export const LobbyView: React.FC = () => {
                                 <span className={'entry-wrapper field-' + enabled}>
                                     <input name='title' type="text" onChange={e => updateD(index2, index, e.target.value, null, null, null)} placeholder={y.title}></input>
                                     <input name='subtitle' type="text" onChange={e => updateD(index2, index, null, e.target.value, null, null)} placeholder={y.serie?.episodeTitle}></input>
-                                    <input name='season' type="text" onChange={e => updateD(index2, index, null, null, e.target.value, null)} placeholder={y.serie?.season}></input>
-                                    <input name='episode' type="text" onChange={e => updateD(index2, index, null, null, null, e.target.value)} placeholder={y.serie?.episode}></input>
+                                    <input name='season' type="text" onChange={e => updateD(index2, index, null, null, e.target.value, null)} placeholder={y.serie?.season.toUpperCase()}></input>
+                                    <input name='episode' type="text" onChange={e => updateD(index2, index, null, null, null, e.target.value)} placeholder={y.serie?.episode.toUpperCase()}></input>
                                 </span>
                             )
                         }
@@ -128,7 +164,14 @@ export const LobbyView: React.FC = () => {
                     )
                 })
             }
-            <button onClick={_ => moveFiles()}>Hagrid gogogo ({enabledCount})</button>
+            <button onClick={_ => verifyMoveFiles()}>Hagrid gogogo ({enabledCount})</button>
+
+            <span className={(verifyHidden) ? "verify-hidden" : "verify"} onClick={_ => cancelMoveFiles()}>
+                <div>
+                    <button onClick={_ => moveFiles()}>JUST DO IT!</button>
+                    <button onClick={_ => cancelMoveFiles()}>Nah</button>
+                </div>
+            </span>
         </div>
     );
 };

@@ -89,7 +89,7 @@ class MovieFormatter {
                                     .map(x => x.charAt(0).toUpperCase() + x.slice(1))
                                     .join(" ");
                                 title += (year != null) ? " (" + year + ")" : "";
-
+                            
                             yeet.push(
                                 {
                                     isMovie: isMovie,
@@ -171,8 +171,32 @@ class MovieFormatter {
                     Logger.INFO(`status: ${directories.length}/${allFiles.length}`);
 
                     if(directories.length == allFiles.length) {
-                        const resp = buildResponse(allFiles, false, "");
-                        Logger.DEBUG(`retrieved ${allFiles.length} files`);
+                        const ffffffff = allFiles.map(d => {
+                            return d.filter(x => {
+                                const asdf = x.originalFileName.split(".")
+                                if(x.isMovie) {
+                                    const dirFolder = x.title.split("(")[0].trim();
+                                    const formtattedTitle = x.title.split(" ").join("\ ").split("(").join("\(").split(")").join("\)")
+
+                                    const alreadyExists = fs.existsSync(this.dirMovie + dirFolder + "/" + formtattedTitle + "." + asdf[asdf.length - 1])
+
+                                    if(alreadyExists) return false;
+                                    return true;
+                                } else {
+                                    const episodeTitle = (x.serie.episodeTitle == "") ? "" : " " + x.serie.episodeTitle;
+                                    const fffff = (x.isSerie) ? this.dirSerie : this.dirMiniSerie ;    
+                                    const alreadyExists = fs.existsSync(
+                                        fffff + x.title + "/" + x.serie.season.toUpperCase() + "/" + x.title + " - " + x.serie.season.toUpperCase() + x.serie.episode.toUpperCase() + episodeTitle + "." + asdf[asdf.length - 1]
+                                    );
+
+                                    if(alreadyExists) return false;
+                                    return true;
+                                }
+    
+                            })
+                        }).filter(x => x.length != 0)
+                        const resp = buildResponse(ffffffff, false, "");
+                        Logger.DEBUG(`retrieved ${ffffffff.length} files`);
                         emitToSelf(socket, "files-retrieved", resp);
                     }
                 });
@@ -219,16 +243,22 @@ class MovieFormatter {
                             }
                         );
                     } else {
-                        const dirFolder = y.title.split("(")[0];
+                        const dirFolder = y.title.split("(")[0].trim();
+                        const dirrrr = this.dir;
+                        if (!fs.existsSync(rootDir + "/" + dirFolder)){
+                            fs.mkdirSync(rootDir + "/" + dirFolder);
+                        }
+
                         fs.rename(
                             this.dir + y.originalDir + "/" + y.originalFileName, 
                             rootDir + dirFolder + "/" + y.title + "." + extension[extension.length - 1], 
                             (err) => {
                                 if (err) throw err;
-                                fs.readdir(this.dir + y.originalDir, function(_, files) {
+                                fs.readdir(dirrrr + y.originalDir, function(_, files) {
                                     if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
-                                        fs.rmSync(this.dir + y.originalDir, { recursive: true, force: true });
-                                        this.retrieveMovies(socket);
+                                        fs.rmSync(dirrrr + y.originalDir, { recursive: true, force: true });
+                                        const resp = buildResponse(null, false, "");
+                                        emitToSelf(socket, "files-moved", resp);
                                     }
                                 });
                             }

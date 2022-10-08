@@ -27,7 +27,7 @@ const io = new Server(server, { cors: { origin: '*' }, allowEIO3: true, pingInte
 io.on("connect_error", (err) => Logger.ERROR(err));
 io.on('connection', (socket) => {
   movieFormatter.retrieveMovies(socket);
-
+  socket.on("retrieve-files", () => movieFormatter.retrieveMovies(socket));
   socket.on("move-files", (files: DownloadFormatted[][]) => movieFormatter.moveFiles(socket, files));
 });
 
