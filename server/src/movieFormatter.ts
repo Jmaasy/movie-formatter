@@ -255,9 +255,12 @@ class MovieFormatter {
                             (err) => {
                                 if (err) throw err;
                                 fs.readdir(dirrrr + y.originalDir, function(_, files) {
-                                    if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
+                                    Logger.INFO(files);
+                                    Logger.INFO(!files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")))
+                                    
+                                    if (!files.length || !files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")) || files.length == 0) {
                                         fs.rm(dirrrr + y.originalDir, (err) => {
-                                            console.log(err);
+                                            Logger.INFO(err);
                                             const resp = buildResponse(null, false, "");
                                             emitToSelf(socket, "files-moved", resp);
                                         });
