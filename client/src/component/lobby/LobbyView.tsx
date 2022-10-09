@@ -101,7 +101,8 @@ export const LobbyView: React.FC = () => {
                 fileState?.map((x, index2) => {
                 
                     const enabled = (changedFileState != null && changedFileState[index2][0].enabled) ? "enabled" : "disabled";
-                    
+                    const duplicate = (x[0].duplicate) ? "entry-duplicate": "";
+
                     let yayeet = "0"
                     if(x[0].isSerie) yayeet = "1"
                     if(x[0].isMiniSerie) yayeet = "2"
@@ -113,6 +114,13 @@ export const LobbyView: React.FC = () => {
                                 {(x[0].isSerie) ? (<option value="1" selected>Serie</option>): (<option value="1">Serie</option>)}
                                 {(x[0].isMiniSerie) ? (<option value="2" selected>Mini Serie</option>): (<option value="2">Mini Serie</option>)}
                             </select>
+                            {
+                                (duplicate) ? (
+                                    <span>
+                                        Duplicate entry detected, It will be deleted when enabled.
+                                    </span>
+                                ) : ("")
+                            }
                         </span>
                     );
 
@@ -131,7 +139,6 @@ export const LobbyView: React.FC = () => {
                         </span>
                     )
                 
-
                     const z = x.map((y, index) => {
                         if(y.isMovie) {
                             return (
@@ -152,7 +159,7 @@ export const LobbyView: React.FC = () => {
                     })
 
                     return (
-                        <div className="entry">
+                        <div className={"entry " + duplicate}>
                             <label className="container">
                                 <input name='enabled' type="checkbox" onChange={e => updateEnabled(index2, e.target.checked)} checked={x[0].enabled}></input>
                                 <span className="checkmark"></span>

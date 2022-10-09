@@ -185,3 +185,23 @@ button:hover {
 #main .f {
   padding-bottom: 42px;
 }
+
+.entry-duplicate .entry-head select {
+  width: calc(75% - 14px);
+}
+
+.entry-duplicate .entry-head span {
+  font-size: 11px;
+  position: absolute;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  height: max-content;
+  width: 25%;
+}
+
+.entry-duplicate .entry-head {
+  position: relative;
+  background: #940000!important;
+}

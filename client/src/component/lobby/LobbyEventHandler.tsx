@@ -8,6 +8,7 @@ export const setupEventHandlers = (
 ) => {
     if(socket != null) {
         socket.off("files-retrieved").on("files-retrieved", event => {
+            console.log(event);
             setFileState(event.content);
             setChangedFileState(event.content);
         });

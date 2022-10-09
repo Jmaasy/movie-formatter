@@ -11,8 +11,8 @@ type DownloadFormatted = {
 
     originalDir: string,
     originalFileName: string,
-    originalSize: Number,
 
+    duplicate: boolean,
     enabled: boolean
 };
 

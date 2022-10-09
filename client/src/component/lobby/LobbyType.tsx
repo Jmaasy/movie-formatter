@@ -11,8 +11,8 @@ export type FileMapper = {
 
     originalDir: string,
     originalFileName: string,
-    originalSize: Number,
 
+    duplicate: boolean,
     enabled: boolean
 };
 

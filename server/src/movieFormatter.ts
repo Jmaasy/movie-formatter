@@ -12,9 +12,10 @@ class MovieFormatter {
     fourNumbersRegex = RegExp(/[0-9]{4}/g);
     duplicateSpacesRegex = RegExp(/\s\s+/g);
 
-    preDir = "/mnt/nas"
+    // preDir = "/mnt/nas"
+    preDir = "/Users/jeffreymaas/nas"
 
-    dir = this.preDir + "/Plex/Downloaded/";
+    dir = this.preDir + "/Plex/Downloaded/Completed/";
     dirMovie = this.preDir + "/Plex/Movies/";
     dirMiniSerie = this.preDir + "/Plex/Mini-Series/";
     dirSerie = this.preDir + "/Plex/Series/";
@@ -40,7 +41,6 @@ class MovieFormatter {
                 fs.promises.readdir(this.dir + path).then(files => {
                     files.forEach(file => {
                         if(file.includes(".mkv") != false || file.includes(".mp4") != false) {
-                            const size = fs.statSync(this.dir + path + "/" + file).size;
                             const titleWithoutSpecialCharacters = file.replace(this.specialCharacterRegex, " ")
                             const yearFound = this.yearRegex.test(titleWithoutSpecialCharacters);
                             const regexYear = titleWithoutSpecialCharacters.match(this.yearRegex);
@@ -104,9 +104,9 @@ class MovieFormatter {
                                     
                                     originalDir: path,
                                     originalFileName: file,
-                                    originalSize: size,
-                                    
-                                    enabled: fs.statSync(this.dir + path + "/" + file).size == size
+
+                                    duplicate: false,
+                                    enabled: true
                                 }
                             )
                         }
@@ -172,7 +172,7 @@ class MovieFormatter {
 
                     if(directories.length == allFiles.length) {
                         const ffffffff = allFiles.map(d => {
-                            return d.filter(x => {
+                            return d.map(x => {
                                 const asdf = x.originalFileName.split(".")
                                 if(x.isMovie) {
                                     const dirFolder = x.title.split("(")[0].trim();
@@ -180,8 +180,15 @@ class MovieFormatter {
 
                                     const alreadyExists = fs.existsSync(this.dirMovie + dirFolder + "/" + formtattedTitle + "." + asdf[asdf.length - 1])
 
-                                    if(alreadyExists) return false;
-                                    return true;
+                                    Logger.INFO(this.dirMovie + dirFolder + "/" + formtattedTitle + "." + asdf[asdf.length - 1]);
+                                    Logger.INFO(alreadyExists);
+
+                                    if(alreadyExists){
+                                        x.duplicate = true;
+                                        x.enabled = false;
+                                    }
+
+                                    return x
                                 } else {
                                     const episodeTitle = (x.serie.episodeTitle == "") ? "" : " " + x.serie.episodeTitle;
                                     const fffff = (x.isSerie) ? this.dirSerie : this.dirMiniSerie ;    
@@ -189,12 +196,16 @@ class MovieFormatter {
                                         fffff + x.title + "/" + x.serie.season.toUpperCase() + "/" + x.title + " - " + x.serie.season.toUpperCase() + x.serie.episode.toUpperCase() + episodeTitle + "." + asdf[asdf.length - 1]
                                     );
 
-                                    if(alreadyExists) return false;
-                                    return true;
+                                    if(alreadyExists){
+                                        x.duplicate = true;
+                                        x.enabled = false;
+                                    }
+
+                                    return x;
                                 }
     
                             })
-                        }).filter(x => x.length != 0)
+                        })
                         const resp = buildResponse(ffffffff, false, "");
                         Logger.DEBUG(`retrieved ${ffffffff.length} files`);
                         emitToSelf(socket, "files-retrieved", resp);
@@ -208,18 +219,25 @@ class MovieFormatter {
         files.forEach(x => {
             x.filter(z => z.enabled)
              .forEach(y => {
-                const size = fs.statSync(this.dir + y.originalDir + "/" + y.originalFileName).size;
-                if(size != y.originalSize) {
-                    Logger.INFO("Size differences, item not moved since it is still being downloaded.");
-                } else {
-                    let rootDir = this.dirMovie;
-                    if(y.isMiniSerie) rootDir = this.dirMiniSerie;
-                    if(y.isSerie) rootDir = this.dirSerie;
-                    
-                    const extension = y.originalFileName.split(".");
-                    const dirrrr = this.dir;
+                let rootDir = this.dirMovie;
+                if(y.isMiniSerie) rootDir = this.dirMiniSerie;
+                if(y.isSerie) rootDir = this.dirSerie;
 
-                    if(y.isMiniSerie || y.isSerie) {
+                const extension = y.originalFileName.split(".");
+                const dirrrr = this.dir;
+
+                if(y.isMiniSerie || y.isSerie) {
+
+                    if(y.duplicate && y.enabled) {
+                        Logger.INFO("Removing duplicate");
+
+                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+                            const resp = buildResponse(null, false, "");
+                            emitToSelf(socket, "files-moved", resp);
+                        });
+                    } else {
+                        Logger.INFO("Moving file(s)");
+
                         if (!fs.existsSync(rootDir + "/" + y.title + "/" + y.serie.season.toUpperCase())){
                             fs.mkdirSync(rootDir + "/" + y.title + "/" + y.serie.season.toUpperCase());
                         }
@@ -242,21 +260,30 @@ class MovieFormatter {
                                 });
                             }
                         );
+                    }
+                } else {
+                    const dirFolder = y.title.split("(")[0].trim();
+
+                    if(y.duplicate && y.enabled) {
+                        Logger.INFO("Removing duplicate");
+
+                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+                            const resp = buildResponse(null, false, "");
+                            emitToSelf(socket, "files-moved", resp);
+                        });
                     } else {
-                        const dirFolder = y.title.split("(")[0].trim();
+                        Logger.INFO("Moving file(s)");
+
                         if (!fs.existsSync(rootDir + dirFolder)){
                             fs.mkdirSync(rootDir + dirFolder);
                         }
 
-                        fs.rename(
+                        fs.rename           (
                             this.dir + y.originalDir + "/" + y.originalFileName, 
                             rootDir + dirFolder + "/" + y.title + "." + extension[extension.length - 1], 
                             (err) => {
                                 if (err) throw err;
                                 fs.readdir(dirrrr + y.originalDir, function(_, files) {
-                                    Logger.INFO(files);
-                                    Logger.INFO(!files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")))
-                                    
                                     if (!files.length || !files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")) || files.length == 0) {
                                         fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
                                             const resp = buildResponse(null, false, "");

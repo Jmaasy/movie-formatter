@@ -47,8 +47,8 @@ export const SocketProvider = (props: SocketProviderProperties) => {
 };
 
 export const startupSocketState = (): SocketType => {
-    const socket = io(`http://192.168.86.26:5000`, {secure: true, timeout: 100, reconnectionDelay: 1000, reconnectionDelayMax:1000, transports: ["websocket"]});
-    // const socket = io(`http://localhost:5000`, {secure: true, timeout: 100, reconnectionDelay: 1000, reconnectionDelayMax:1000, transports: ["websocket"]});
+    // const socket = io(`http://192.168.86.26:5000`, {secure: true, timeout: 100, reconnectionDelay: 1000, reconnectionDelayMax:1000, transports: ["websocket"]});
+    const socket = io(`http://localhost:5000`, {secure: true, timeout: 100, reconnectionDelay: 1000, reconnectionDelayMax:1000, transports: ["websocket"]});
     return {
         socket: socket,
         lastUpdatedTimestamp: Date.now(),
