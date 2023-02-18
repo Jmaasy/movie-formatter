@@ -3,7 +3,7 @@ type DownloadFormatted = {
     isSerie: boolean,
     isMiniSerie: boolean,
 
-    serie: Serie | null,
+    serie: S | null,
 
     year: Number,
     title: string,
@@ -16,10 +16,40 @@ type DownloadFormatted = {
     enabled: boolean
 };
 
-type Serie = {
+type S = {
     episodeTitle: string,
     season: string,
     episode: string
 };
 
-export { DownloadFormatted, Serie };
+type DetectedTitle = {
+    title: string,
+    folder: string
+}
+
+type DetectedSeasons = {
+    seasons: string[],
+    folder: string
+}
+
+type Episode = {
+    number: string,
+    season: string,
+    file: string,
+    folder: string
+}
+
+type Serie = {
+    title: DetectedTitle,
+    episodes: Episode[],
+    type: string
+};
+
+type Movie = {
+    title: string,
+    year: Number,
+    detectionType: string,
+    folder: string
+}
+
+export { DownloadFormatted, Serie, DetectedTitle, Episode, DetectedSeasons, Movie };

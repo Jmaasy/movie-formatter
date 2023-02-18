@@ -1,8 +1,10 @@
 import { Socket } from "socket.io";
 import { buildResponse, emitToSelf } from "./response";
 import * as fs from 'fs';
-import { DownloadFormatted, Serie } from "./downloadFormatted";
+import { DownloadFormatted, Movie, Serie } from "./downloadFormatted";
 import Logger from "./logger";
+import Detection from "./detection/detection";
+import Move from "./move";
 
 class MovieFormatter {
 
@@ -13,290 +15,195 @@ class MovieFormatter {
     duplicateSpacesRegex = RegExp(/\s\s+/g);
 
     // preDir = "/mnt/nas"
-    preDir = "/Users/jeffreymaas/nas"
+    preDir = "/Volumes/Kerbol"
 
     dir = this.preDir + "/Plex/Downloaded/Completed/";
     dirMovie = this.preDir + "/Plex/Movies/";
     dirMiniSerie = this.preDir + "/Plex/Mini-Series/";
     dirSerie = this.preDir + "/Plex/Series/";
     
+    detection = new Detection();
+    move = new Move();
+
     retrieveMovies(socket: Socket) {
-        let directories: string[] = [];
-        let allFiles: DownloadFormatted[][] = [];
-
-        Logger.INFO("retrieving movies");
-
-        fs.promises.readdir(this.dir).then(res => {
-            directories = res.filter(path => {
-                const dir = fs.lstatSync(this.dir + path).isDirectory();
-                const dirSpecialCharacter = this.specialCharacterRegex.test(path);
-                return dir && dirSpecialCharacter;
-            });         
-        }, err => {
-        }).finally(() => {
-            Logger.INFO(`found ${directories.length} directories`);
-
-            directories.forEach((path, index) => {
-                let yeet: DownloadFormatted[] = [];
-                fs.promises.readdir(this.dir + path).then(files => {
-                    files.forEach(file => {
-                        if(file.includes(".mkv") != false || file.includes(".mp4") != false) {
-                            const titleWithoutSpecialCharacters = file.replace(this.specialCharacterRegex, " ")
-                            const yearFound = this.yearRegex.test(titleWithoutSpecialCharacters);
-                            const regexYear = titleWithoutSpecialCharacters.match(this.yearRegex);
-                            const regexYearOrResolution = titleWithoutSpecialCharacters.match(this.fourNumbersRegex);
-    
-                            let season = "";
-                            let episode = "";
-                            let serie: Serie | null = null;
-                            let year: Number | null = null;
-        
-                            if(yearFound) {
-                                year = (
-                                        regexYear[0].charAt(0) == "2" || 
-                                        regexYear[0].charAt(0) == "1" && 
-                                        regexYear[0].charAt(0) == "1" && 
-                                        regexYear[0].charAt(1) == "9" && 
-                                        Number(regexYear[0].charAt(2)) >= 5
-                                ) ? Number(regexYear[0]) : -1 ;
-                            }
-        
-                            const isMovie = titleWithoutSpecialCharacters.match(this.serieRegex) == null;
-                            const isSerie = titleWithoutSpecialCharacters.match(this.serieRegex) != null;
-    
-                            let isMiniSerie = false;
-
-                            if(isSerie) {
-                                season = titleWithoutSpecialCharacters.match(this.serieRegex)[0].toLowerCase().split("e")[0];
-                                episode = "e" + titleWithoutSpecialCharacters.match(this.serieRegex)[0].toLowerCase().split("e")[1];
-
-                                serie = {
-                                    episodeTitle: "",
-                                    season: season,
-                                    episode: episode
-                                }
-                            }
-    
-                            let title = 
-                                titleWithoutSpecialCharacters
-                                    .toLowerCase()
-                                    .replace(season, "")
-                                    .replace(episode, "")
-                                    .split(regexYearOrResolution[0])[0]
-                                    .replace(this.duplicateSpacesRegex, ' ')
-                                    .trim()
-                                    .split(" ")
-                                    .map(x => x.charAt(0).toUpperCase() + x.slice(1))
-                                    .join(" ");
-                                title += (year != null) ? " (" + year + ")" : "";
-                            
-                            yeet.push(
-                                {
-                                    isMovie: isMovie,
-                                    isSerie: isSerie,
-                                    isMiniSerie: isMiniSerie,
-        
-                                    serie: serie,
-        
-                                    year: year,
-                                    title: title,
-                                    newTitle: null,
-                                    
-                                    originalDir: path,
-                                    originalFileName: file,
-
-                                    duplicate: false,
-                                    enabled: true
-                                }
-                            )
-                        }
-                    });        
-                }).finally(() => {
-                    Logger.INFO(`found ${yeet.length} files`);
-
-                    if(yeet.length > 0) {
-                        const f = yeet.map(x => {
-                            if(x.isSerie) {
-                                return x.title
-                                    .split(" ")
-                                    .map(part => {
-                                        const exists = yeet.filter(x => x.title.includes(part));
-                                        return {
-                                            existsIn: exists.length - 1,
-                                            needle: part
-                                        }
-                                    });
-                            }
-                        });
-                        
-                        const maxMatch = (yeet[0].isSerie || yeet[0].isMiniSerie) ? Math.max(...f.map(x => x.map(y => y.existsIn)).flat(2)) : -1;
-                        let ff = yeet.map(x => {
-                            if(x.isSerie) {
-                                const yayeet = x.title
-                                    .split(" ")
-                                    .map(part => {
-                                        const exists = yeet.filter(x => x.title.includes(part));
-                                        return {
-                                            existsIn: exists.length - 1,
-                                            needle: part
-                                        }
-                                    });
-
-                                x.serie.episodeTitle = yayeet.filter(x => x.existsIn != maxMatch).map(x => x.needle).join(" ");   
-                                x.newTitle = yayeet.filter(x => x.existsIn == maxMatch).map(x => x.needle).join(" ");                    
-                            }
-
-                            return x;
-                        });
-
-                        ff = ff.map(x => {
-                            if(x.newTitle != null) {
-                                x.title = x.newTitle;
-                                x.newTitle = null;
-                            }
-                            return x;
-                        })
-
-                        if(ff[0].isSerie && ff.length < 6) {
-                            ff.forEach(fff => {
-                                fff.isMiniSerie = true;
-                                fff.isSerie = false;
-                            })
-                        }
-
-                        allFiles.push(ff);
-
+        Promise.all(this.detection.detectSeries()).then(seriesFound => {
+            const seriesFoundMapped = seriesFound.map(x => {
+                return x.episodes.map(episode => {
+                    let serie = true;
+                    let miniserie = false;
+                    
+                    if(x.type == "TV mini-series") {
+                        serie = false;
+                        miniserie = true;
                     }
-
-                    Logger.INFO(`status: ${directories.length}/${allFiles.length}`);
-
-                    if(directories.length == allFiles.length) {
-                        const ffffffff = allFiles.map(d => {
-                            return d.map(x => {
-                                const asdf = x.originalFileName.split(".")
-                                if(x.isMovie) {
-                                    const dirFolder = x.title.split("(")[0].trim();
-                                    const formtattedTitle = x.title.split(" ").join("\ ").split("(").join("\(").split(")").join("\)")
-
-                                    const alreadyExists = fs.existsSync(this.dirMovie + dirFolder + "/" + formtattedTitle + "." + asdf[asdf.length - 1])
-
-                                    Logger.INFO(this.dirMovie + dirFolder + "/" + formtattedTitle + "." + asdf[asdf.length - 1]);
-                                    Logger.INFO(alreadyExists);
-
-                                    if(alreadyExists){
-                                        x.duplicate = true;
-                                        x.enabled = false;
-                                    }
-
-                                    return x
-                                } else {
-                                    const episodeTitle = (x.serie.episodeTitle == "") ? "" : " " + x.serie.episodeTitle;
-                                    const fffff = (x.isSerie) ? this.dirSerie : this.dirMiniSerie ;    
-                                    const alreadyExists = fs.existsSync(
-                                        fffff + x.title + "/" + x.serie.season.toUpperCase() + "/" + x.title + " - " + x.serie.season.toUpperCase() + x.serie.episode.toUpperCase() + episodeTitle + "." + asdf[asdf.length - 1]
-                                    );
-
-                                    if(alreadyExists){
-                                        x.duplicate = true;
-                                        x.enabled = false;
-                                    }
-
-                                    return x;
-                                }
     
-                            })
-                        })
-                        const resp = buildResponse(ffffffff, false, "");
-                        Logger.DEBUG(`retrieved ${ffffffff.length} files`);
-                        emitToSelf(socket, "files-retrieved", resp);
-                    }
-                });
+                    return {
+                        isMovie: false,
+                        isSerie: serie,
+                        isMiniSerie: miniserie,
+        
+                        serie: {
+                            episodeTitle: "",
+                            episode: episode.number,
+                            season: episode.season
+                        },
+    
+                        year: 0,
+                        title: x.title.title,
+                        newTitle: x.title.title,
+    
+                        originalDir: episode.folder,
+                        originalFileName: episode.file,
+    
+                        duplicate: false,
+                        enabled: true
+                    } as DownloadFormatted  
+                })
             })
+
+            const moviesFound = this.detection.detectMovies()
+                .filter(x => {
+                    return seriesFoundMapped.filter(xx => {
+                        return xx.filter(xxx => {
+                            return xxx.originalDir.includes(x.folder) || xxx.originalFileName.includes(x.folder);
+                        }).length > 0
+                    }).length == 0;
+                })
+                .map(x => {
+                    const formatted = x.title
+                        .toLowerCase().split(' ')
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                    const alreadyExists = fs.existsSync(this.dirMovie + formatted);
+
+                    return [{
+                        isMovie: true,
+                        isSerie: false,
+                        isMiniSerie: false,
+        
+                        serie: null,
+        
+                        year: Number(x.year),
+                        title: x.title,
+                        newTitle: x.title,
+                        
+                        originalDir: x.folder,
+                        originalFileName: x.folder,
+        
+                        duplicate: alreadyExists,
+                        enabled: !alreadyExists
+                    } as DownloadFormatted]
+                });
+
+            const detectedEntities = seriesFoundMapped.concat(moviesFound);
+            const resp = buildResponse(detectedEntities, false, "");
+            
+            Logger.DEBUG(`detected ${detectedEntities.length} entities`);
+            emitToSelf(socket, "files-retrieved", resp);
         });
     }
 
     moveFiles(socket: Socket, files: DownloadFormatted[][]) {
-        files.forEach(x => {
-            x.filter(z => z.enabled)
-             .forEach(y => {
-                let rootDir = this.dirMovie;
-                if(y.isMiniSerie) rootDir = this.dirMiniSerie;
-                if(y.isSerie) rootDir = this.dirSerie;
+        console.log(files);
 
-                const extension = y.originalFileName.split(".");
-                const dirrrr = this.dir;
-
-                if(y.isMiniSerie || y.isSerie) {
-
-                    if(y.duplicate && y.enabled) {
-                        Logger.INFO("Removing duplicate");
-
-                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
-                            const resp = buildResponse(null, false, "");
-                            emitToSelf(socket, "files-moved", resp);
-                        });
-                    } else {
-                        Logger.INFO("Moving file(s)");
-
-                        if (!fs.existsSync(rootDir + "/" + y.title + "/" + y.serie.season.toUpperCase())){
-                            fs.mkdirSync(rootDir + "/" + y.title + "/" + y.serie.season.toUpperCase());
-                        }
-
-                        const episodeTitle = (y.serie.episodeTitle == "") ? "" : " " + y.serie.episodeTitle;
-
-                        fs.rename(
-                            this.dir + y.originalDir + "/" + y.originalFileName, 
-                            rootDir + y.title + "/" + y.serie.season.toUpperCase() + "/" + y.title + " - " + y.serie.season.toUpperCase() + y.serie.episode.toUpperCase() + episodeTitle + "." + extension[extension.length - 1], 
-                            (err) => {
-                                if (err) throw err;
-                                fs.readdir(this.dir + y.originalDir, function(_, files) {
-                                    if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
-                                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
-                                            const resp = buildResponse(null, false, "");
-                                            emitToSelf(socket, "files-moved", resp);
-                                        });
-                                        this.retrieveMovies(socket);
-                                    }
-                                });
-                            }
-                        );
-                    }
-                } else {
-                    const dirFolder = y.title.split("(")[0].trim();
-
-                    if(y.duplicate && y.enabled) {
-                        Logger.INFO("Removing duplicate");
-
-                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
-                            const resp = buildResponse(null, false, "");
-                            emitToSelf(socket, "files-moved", resp);
-                        });
-                    } else {
-                        Logger.INFO("Moving file(s)");
-
-                        if (!fs.existsSync(rootDir + dirFolder)){
-                            fs.mkdirSync(rootDir + dirFolder);
-                        }
-
-                        fs.rename           (
-                            this.dir + y.originalDir + "/" + y.originalFileName, 
-                            rootDir + dirFolder + "/" + y.title + "." + extension[extension.length - 1], 
-                            (err) => {
-                                if (err) throw err;
-                                fs.readdir(dirrrr + y.originalDir, function(_, files) {
-                                    if (!files.length || !files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")) || files.length == 0) {
-                                        fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
-                                            const resp = buildResponse(null, false, "");
-                                            emitToSelf(socket, "files-moved", resp);
-                                        });
-                                    }
-                                });
-                            }
-                        );
-                    }
-                }
-            })
+        const movies = files.filter(x => {
+            return x.filter(xx => xx.isMovie)
+        }).flat().map(x => {
+            return {
+                title: x.title,
+                year: x.year,
+                detectionType: "",
+                folder: x.originalDir + "/" + x.originalFileName
+            } as Movie
         })
+
+        this.move.execute(socket, movies, []);
+
+        // files.forEach(x => {
+        //     x.filter(z => z.enabled)
+        //      .forEach(y => {
+        //         let rootDir = this.dirMovie;
+        //         if(y.isMiniSerie) rootDir = this.dirMiniSerie;
+        //         if(y.isSerie) rootDir = this.dirSerie;
+
+        //         const extension = y.originalFileName.split(".");
+        //         const dirrrr = this.dir;
+
+        //         if(y.isMiniSerie || y.isSerie) {
+
+        //             if(y.duplicate && y.enabled) {
+        //                 Logger.INFO("Removing duplicate");
+
+        //                 fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+        //                     const resp = buildResponse(null, false, "");
+        //                     emitToSelf(socket, "files-moved", resp);
+        //                 });
+        //             } else {
+        //                 Logger.INFO("Moving file(s)");
+
+        //                 if (!fs.existsSync(rootDir + y.title)){
+        //                     fs.mkdirSync(rootDir + y.title);
+        //                 }
+
+        //                 if (!fs.existsSync(rootDir + y.title + "/" + y.serie.season.toUpperCase())){
+        //                     fs.mkdirSync(rootDir + y.title + "/" + y.serie.season.toUpperCase());
+        //                 }
+
+        //                 const episodeTitle = (y.serie.episodeTitle == "") ? "" : " " + y.serie.episodeTitle;
+
+        //                 fs.rename(
+        //                     this.dir + y.originalDir + "/" + y.originalFileName, 
+        //                     rootDir + y.title + "/" + y.serie.season.toUpperCase() + "/" + y.title + " - " + y.serie.season.toUpperCase() + y.serie.episode.toUpperCase() + episodeTitle + "." + extension[extension.length - 1], 
+        //                     (err) => {
+        //                         if (err) throw err;
+        //                         fs.readdir(this.dir + y.originalDir, function(_, files) {
+        //                             if (!files.length || files.filter(x => !x.includes(".mp4") && !x.includes(".mkv")).length == 0) {
+        //                                 fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+        //                                     const resp = buildResponse(null, false, "");
+        //                                     emitToSelf(socket, "files-moved", resp);
+        //                                 });
+        //                                 this.retrieveMovies(socket);
+        //                             }
+        //                         });
+        //                     }
+        //                 );
+        //             }
+        //         } else {
+        //             const dirFolder = y.title.split("(")[0].trim();
+
+        //             if(y.duplicate && y.enabled) {
+        //                 Logger.INFO("Removing duplicate");
+
+        //                 fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+        //                     const resp = buildResponse(null, false, "");
+        //                     emitToSelf(socket, "files-moved", resp);
+        //                 });
+        //             } else {
+        //                 Logger.INFO("Moving file(s)");
+
+        //                 if (!fs.existsSync(rootDir + dirFolder)){
+        //                     fs.mkdirSync(rootDir + dirFolder);
+        //                 }
+
+        //                 fs.rename           (
+        //                     this.dir + y.originalDir + "/" + y.originalFileName, 
+        //                     rootDir + dirFolder + "/" + y.title + "." + extension[extension.length - 1], 
+        //                     (err) => {
+        //                         if (err) throw err;
+        //                         fs.readdir(dirrrr + y.originalDir, function(_, files) {
+        //                             if (!files.length || !files.some(yeet => yeet.includes(".mp4") || yeet.includes(".mkv")) || files.length == 0) {
+        //                                 fs.rm(dirrrr + y.originalDir, { recursive: true, force: true }, (err) => {
+        //                                     const resp = buildResponse(null, false, "");
+        //                                     emitToSelf(socket, "files-moved", resp);
+        //                                 });
+        //                             }
+        //                         });
+        //                     }
+        //                 );
+        //             }
+        //         }
+        //     })
+        // })
     }
 }
 
